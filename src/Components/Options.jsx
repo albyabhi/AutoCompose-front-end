@@ -156,7 +156,7 @@ const EMAIL_TYPES = {
 const Options = () => {
   const [emailData , setEmailData] = useState('');
   const apiUrl = import.meta.env.VITE_REACT_APP_API_URL;
-
+  console.log(apiUrl)
   const [formData, setFormData] = useState({
     name: "",
     emailType: "",
