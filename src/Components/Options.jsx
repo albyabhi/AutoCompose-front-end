@@ -268,6 +268,7 @@ const Options = () => {
   
 
   return (
+    <div>
     <FormContainer>
       <Form onSubmit={handleSubmit}>
         <FormGroup>
@@ -353,8 +354,10 @@ const Options = () => {
         />
       </SubmitButton>
      </Form>
-      {emailData !== '' && <Result data={emailData} />}
+     
     </FormContainer>
+     {emailData !== '' && <Result data={emailData} />}
+     </div>
   );
 };
 

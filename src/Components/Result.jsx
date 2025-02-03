@@ -80,8 +80,6 @@ const Result = ({ data }) => {
   return (
     <ResultContainer>
       <div>
-        <h3>Generated Subject:</h3>
-        <p>{data?.subject || 'No subject available'}</p> {/* Ensure data.subject exists */}
         <h3>Generated Body:</h3>
         <div
           ref={bodyRef}
