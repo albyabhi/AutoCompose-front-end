@@ -1,6 +1,9 @@
 import React, { useState, useCallback } from "react";
-import styled from "styled-components";
 import Result from "./Result";
+import Stars from "../assets/stars.png";
+import styled, { keyframes } from "styled-components";
+
+
 
 const FormContainer = styled.div`
   display: flex;
@@ -76,8 +79,27 @@ const RangeInput = styled.input`
   }
 `;
 
+const scaleAnimation = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+`;
+
+const Icon = styled.img.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isLoading',
+})`
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  animation: ${props => props.isLoading ? scaleAnimation : 'none'} 0.8s infinite;
+`;
+
+
+
 const SubmitButton = styled.button`
-  background-color: rgb(67, 60, 213);
+  display: flex;
+  align-items: center;
+  justify-content: center; 
+background-color: rgb(67, 60, 213);
   color: white;
   padding: 10px 15px;
   border: none;
@@ -94,6 +116,30 @@ const SubmitButton = styled.button`
     cursor: not-allowed;
   }
 `;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  width: 100%;
+  color:rgb(0, 0, 0);
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const DropdownItem = styled.div`
+  padding: 10px;
+  cursor: pointer;
+  &:hover {
+    background: #f0f0f0;
+  }
+`;
+
+
+
 
 const Suggestions = {
   "Interview Application": "Provide qualifications, skills, experience, and availability.",
@@ -154,9 +200,12 @@ const EMAIL_TYPES = {
 };
 
 const Options = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
   const [emailData , setEmailData] = useState('');
+  const [filteredEmailTypes, setFilteredEmailTypes] = useState(Object.values(EMAIL_TYPES));
+  const [buttonText , setButtonText] = useState("Genarate");
+  const [isLoading, setIsLoading] = useState(false);
   const apiUrl = import.meta.env.VITE_REACT_APP_API_URL;
-  console.log(apiUrl)
   const [formData, setFormData] = useState({
     name: "",
     emailType: "",
@@ -175,8 +224,23 @@ const Options = () => {
     e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
+  const handleEmailTypeChange = (e) => {
+    const { value } = e.target;
+    setFormData((prev) => ({ ...prev, emailType: value }));
+  
+    // Filter email types based on input
+    const filtered = Object.values(EMAIL_TYPES).filter((type) =>
+      type.toLowerCase().includes(value.toLowerCase())
+    );
+  
+    setFilteredEmailTypes(filtered.slice(0, 5)); // Limit to 5 options
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setButtonText("");
+    setEmailData("");
     
     try {
       const response = await fetch(`${apiUrl}/gen/generate`, {
@@ -192,10 +256,13 @@ const Options = () => {
       }
   
       const result = await response.json();
-      console.log("Response from backend:", result);
       setEmailData(result);
+      setButtonText("Generate");
     } catch (error) {
       console.error("Error:", error.message);
+      setButtonText("Generate");
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -216,22 +283,41 @@ const Options = () => {
         </FormGroup>
 
         <FormGroup>
-          <Label htmlFor="emailType">Email Type:</Label>
-          <Input
-            type="text"
-            id="emailType"
-            name="emailType"
-            value={formData.emailType}
-            onChange={handleChange}
-            list="emailTypeOptions"
-            required
-          />
-          <datalist id="emailTypeOptions">
-            {Object.values(EMAIL_TYPES).map((type) => (
-              <option key={type} value={type} />
-            ))}
-          </datalist>
-        </FormGroup>
+  <Label htmlFor="emailType">Email Type:</Label>
+  <div style={{ position: "relative" }}>
+    <Input
+      type="text"
+      id="emailType"
+      name="emailType"
+      value={formData.emailType}
+      onChange={(e) => {
+        handleChange(e);
+        setShowDropdown(true); // Show dropdown when typing
+      }}
+      onFocus={() => setShowDropdown(true)}
+      onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Delay hiding for click selection
+      required
+    />
+    {showDropdown && (
+      <DropdownMenu>
+        {Object.values(EMAIL_TYPES)
+          .filter((type) => type.toLowerCase().includes(formData.emailType.toLowerCase()))
+          .map((type) => (
+            <DropdownItem
+              key={type}
+              onClick={() => {
+                setFormData((prev) => ({ ...prev, emailType: type }));
+                setShowDropdown(false);
+              }}
+            >
+              {type}
+            </DropdownItem>
+          ))}
+      </DropdownMenu>
+    )}
+  </div>
+</FormGroup>
+
 
         <FormGroup>
           <Label htmlFor="details">Additional Details:</Label>
@@ -258,8 +344,15 @@ const Options = () => {
           <span>{formData.standardness}</span>
         </FormGroup>
 
-        <SubmitButton type="submit">Generate</SubmitButton>
-      </Form>
+        <SubmitButton type="submit" disabled={isLoading}>
+        {buttonText} 
+        <Icon 
+          src={Stars} 
+          alt="stars" 
+          isLoading={isLoading} 
+        />
+      </SubmitButton>
+     </Form>
       {emailData !== '' && <Result data={emailData} />}
     </FormContainer>
   );
